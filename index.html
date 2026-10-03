@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pour Value: units and value calculator</title>
+<style>
+:root{--bg:#edf0f3;--card:#fff;--ink:#14202b;--mute:#5d6b78;--line:#d5dce3;--acc:#c46a00;--accbg:#fff1dc;--good:#0f7a4a;--goodbg:#dff5e9;--warn:#b3261e;--warnbg:#fde8e6;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10171e;--card:#18222c;--ink:#e8eef3;--mute:#93a2b0;--line:#2b3946;--acc:#ffa133;--accbg:#3a2a12;--good:#4fd392;--goodbg:#10331f;--warn:#ff8f87;--warnbg:#3b1815}}
+:root[data-theme="dark"]{--bg:#10171e;--card:#18222c;--ink:#e8eef3;--mute:#93a2b0;--line:#2b3946;--acc:#ffa133;--accbg:#3a2a12;--good:#4fd392;--goodbg:#10331f;--warn:#ff8f87;--warnbg:#3b1815}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 ui-rounded,"Avenir Next",Segoe UI,system-ui,sans-serif}
+main{max-width:760px;margin:0 auto;padding:16px}
+h1{font-size:1.6rem;margin:8px 0 2px;letter-spacing:-.02em}
+.sub{color:var(--mute);margin:0 0 14px}
+.num{font-variant-numeric:tabular-nums}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+button{font:inherit;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:10px 14px;border-radius:10px;cursor:pointer}
+button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:600}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--acc);outline-offset:1px}
+.drink{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.drink.best{border-color:var(--good);box-shadow:0 0 0 2px var(--good)}
+.row{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:10px}
+label{display:block;font-size:.8rem;color:var(--mute);margin-bottom:3px}
+input,select{width:100%;font:inherit;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+input.bad{border-color:var(--warn)}
+.top{display:flex;gap:8px;align-items:end}
+.top>div:first-child{flex:1}
+.x{padding:10px 12px}
+.res{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.res div{background:var(--bg);border-radius:10px;padding:8px;text-align:center}
+.res b{display:block;font-size:1.25rem}
+.res span{font-size:.75rem;color:var(--mute)}
+.tag{display:inline-block;margin-top:10px;padding:3px 10px;border-radius:99px;font-size:.8rem;font-weight:600;background:var(--goodbg);color:var(--good)}
+.sec{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:16px 0}
+.sec h2{font-size:1.1rem;margin:0 0 8px}
+.rank{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-top:1px solid var(--line)}
+.rank:first-of-type{border-top:0}
+.meter{height:12px;border-radius:99px;background:var(--bg);overflow:hidden;margin:8px 0}
+.meter i{display:block;height:100%;background:var(--good);width:0;transition:width .3s}
+.meter i.over{background:var(--warn)}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.85rem;text-align:center}
+th,td{padding:6px 8px;border:1px solid var(--line);white-space:nowrap}
+th{background:var(--bg);font-weight:600}
+td.hi{background:var(--accbg);color:var(--acc);font-weight:700}
+td.mx{background:var(--goodbg)}
+.note{color:var(--mute);font-size:.82rem}
+.err{color:var(--warn);font-size:.8rem;min-height:1em}
+@media (min-width:560px){.row{grid-template-columns:repeat(4,1fr)}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<main>
+<h1>Pour Value</h1>
+<p class="sub">Compare drinks by units, cost per unit and alcohol per pound. Fields accept sums like <b>568*2</b> or <b>4.5+0.5</b>.</p>
+
+<div class="bar">
+<button class="primary" id="add">Add drink</button>
+<button id="reset">Clear all</button>
+</div>
+
+<div id="list"></div>
+
+<section class="sec" id="rankSec" hidden>
+<h2>Best value ranking</h2>
+<div id="rank"></div>
+</section>
+
+<section class="sec">
+<h2>Weekly total</h2>
+<div><b class="num" id="tot">0.0</b> units across all drinks (UK guideline: 14 a week)</div>
+<div class="meter"><i id="meter"></i></div>
+<div class="note" id="totNote">Add drinks to see how they add up.</div>
+</section>
+
+<section class="sec">
+<h2>What if the price or strength changes?</h2>
+<label for="whatif">Drink to explore</label>
+<select id="whatif"></select>
+<p class="note">Units per £ at nearby prices (across) and strengths (down). Highlighted cell is your current drink.</p>
+<div class="scroll" id="grid"></div>
+</section>
+
+<p class="note">One UK unit is 10 ml of pure alcohol. Units = volume (ml) × ABV ÷ 1000. Value score is units per £, so higher is better.</p>
+</main>
+
+<script>
+const PRESETS=[
+["Lager (generic)",4.0],["Premium lager",5.0],["Bitter / ale",4.2],["IPA",5.5],["Stout",4.2],["Cider",4.5],["Strong cider",7.5],
+["Red wine",13],["White wine",12],["Prosecco",11],["Gin",40],["Vodka",37.5],["Whisky",40],["Rum",37.5],["Spiced rum",35],["Tequila",38],["Baileys",17],["Alcopop / RTD",4.0]];
+const SIZES=[["Shot 25 ml",25],["Double 50 ml",50],["Small wine 125 ml",125],["Wine 175 ml",175],["Large wine 250 ml",250],["Can 330 ml",330],["Can 440 ml",440],["Bottle 500 ml",500],["Pint 568 ml",568],["Bottle 660 ml",660],["Wine bottle 750 ml",750],["Spirit 70 cl",700],["Litre 1000 ml",1000]];
+let drinks=[],nid=1;
+
+// safe arithmetic parser: + - * / x ( ) decimals
+function calc(s){
+ s=String(s).replace(/[x×]/gi,'*').replace(/\s+/g,'');
+ if(!s)return NaN;
+ let i=0;
+ function ex(){let v=tm();while(s[i]=='+'||s[i]=='-'){const o=s[i++];const r=tm();v=o=='+'?v+r:v-r}return v}
+ function tm(){let v=fc();while(s[i]=='*'||s[i]=='/'){const o=s[i++];const r=fc();v=o=='*'?v*r:v/r}return v}
+ function fc(){
+  if(s[i]=='('){i++;const v=ex();if(s[i]!=')')throw 0;i++;return v}
+  if(s[i]=='-'){i++;return -fc()}
+  const m=/^\d*\.?\d+/.exec(s.slice(i));if(!m)throw 0;i+=m[0].length;return parseFloat(m[0])}
+ try{const v=ex();return i==s.length&&isFinite(v)?v:NaN}catch(e){return NaN}
+}
+const f=(n,d=2)=>isFinite(n)?n.toLocaleString('en-GB',{minimumFractionDigits:d,maximumFractionDigits:d}):'-';
+function metrics(d){
+ const vol=calc(d.vol),abv=calc(d.abv),qty=d.qty===''?1:calc(d.qty),price=calc(d.price);
+ if(!(vol>0&&abv>0&&qty>0))return null;
+ const units=vol*qty*abv/1000;
+ const ok=price>0;
+ return{units,ml:units*10,price,ok,perUnit:ok?price/units:NaN,upp:ok?units/price:NaN,vol,abv,qty};
+}
+function save(){try{localStorage.setItem('pourvalue',JSON.stringify(drinks))}catch(e){}}
+function load(){try{const s=JSON.parse(localStorage.getItem('pourvalue'));if(Array.isArray(s)&&s.length){drinks=s;nid=Math.max(...s.map(d=>d.id))+1;return}}catch(e){}
+ drinks=[{id:1,name:'Pint of lager',vol:'568',qty:'1',abv:'4.0',price:'4.80'},{id:2,name:'Cider 4-pack',vol:'440',qty:'4',abv:'4.5',price:'6.50'}];nid=3}
+function add(){drinks.push({id:nid++,name:'',vol:'',qty:'1',abv:'',price:''});render()}
+function opt(a,sel){return a.map(([n,v])=>`<option value="${v}">${n}</option>`).join('')}
+function esc(t){return String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+
+function render(){
+ const L=document.getElementById('list');
+ L.innerHTML=drinks.map(d=>`<div class="drink" data-id="${d.id}">
+ <div class="top"><div><label>Name</label><input data-k="name" value="${esc(d.name)}" placeholder="e.g. Tesco gin"></div>
+ <button class="x" data-del="${d.id}" aria-label="Remove drink">✕</button></div>
+ <div class="row">
+ <div><label>Type (fills ABV)</label><select data-pre><option value="">Pick…</option>${opt(PRESETS)}</select></div>
+ <div><label>Size (fills ml)</label><select data-size><option value="">Pick…</option>${opt(SIZES)}</select></div>
+ <div><label>Volume each (ml)</label><input data-k="vol" inputmode="decimal" value="${esc(d.vol)}" placeholder="568"></div>
+ <div><label>Quantity</label><input data-k="qty" inputmode="decimal" value="${esc(d.qty)}" placeholder="1"></div>
+ <div><label>ABV %</label><input data-k="abv" inputmode="decimal" value="${esc(d.abv)}" placeholder="4.5"></div>
+ <div><label>Total price (£)</label><input data-k="price" inputmode="decimal" value="${esc(d.price)}" placeholder="4.80"></div>
+ </div><div class="res"></div><div class="err"></div><div class="tagbox"></div></div>`).join('');
+ update();
+}
+function update(){
+ const cards=[...document.querySelectorAll('.drink')];
+ const ms=drinks.map(metrics);
+ let best=-1,bv=0;
+ ms.forEach((m,i)=>{if(m&&m.ok&&m.upp>bv){bv=m.upp;best=i}});
+ const multi=ms.filter(m=>m&&m.ok).length>1;
+ cards.forEach((c,i)=>{
+  const m=ms[i],d=drinks[i];
+  c.classList.toggle('best',multi&&i==best);
+  c.querySelectorAll('input[data-k]').forEach(inp=>{const k=inp.dataset.k;if(k=='name')return;inp.classList.toggle('bad',inp.value.trim()!==''&&isNaN(calc(inp.value)))});
+  c.querySelector('.res').innerHTML=m?`<div><b class="num">${f(m.units,1)}</b><span>units</span></div><div><b class="num">${m.ok?'£'+f(m.perUnit):'-'}</b><span>per unit</span></div><div><b class="num">${m.ok?f(m.upp):'-'}</b><span>units per £</span></div>`:'<div style="grid-column:1/-1"><span>Enter volume and ABV to see units</span></div>';
+  c.querySelector('.err').textContent=m&&!m.ok?'Add a price to see value':'';
+  c.querySelector('.tagbox').innerHTML=multi&&i==best?'<span class="tag">Best value</span>':'';
+ });
+ // ranking
+ const rk=drinks.map((d,i)=>({d,m:ms[i]})).filter(x=>x.m&&x.m.ok).sort((a,b)=>b.m.upp-a.m.upp);
+ document.getElementById('rankSec').hidden=rk.length<2;
+ document.getElementById('rank').innerHTML=rk.map((x,i)=>{
+  const diff=i?` (${f((1-x.m.upp/rk[0].m.upp)*100,0)}% less alcohol per £)`:' (cheapest per unit)';
+  return `<div class="rank"><span>${i+1}. ${esc(x.d.name||'Unnamed')}</span><span class="num"><b>£${f(x.m.perUnit)}</b>/unit${diff}</span></div>`}).join('');
+ // total
+ const tot=ms.reduce((s,m)=>s+(m?m.units:0),0);
+ document.getElementById('tot').textContent=f(tot,1);
+ const mt=document.getElementById('meter');mt.style.width=Math.min(100,tot/14*100)+'%';mt.classList.toggle('over',tot>14);
+ document.getElementById('totNote').textContent=tot==0?'Add drinks to see how they add up.':tot>14?'Over the 14 unit weekly guideline. Spread any drinking over several days with alcohol-free days.':`${f(14-tot,1)} units left under the weekly guideline.`;
+ // what-if
+ const ws=document.getElementById('whatif'),cur=ws.value;
+ ws.innerHTML=drinks.map(d=>`<option value="${d.id}">${esc(d.name||'Drink '+d.id)}</option>`).join('');
+ if(drinks.some(d=>String(d.id)==cur))ws.value=cur;
+ grid(); save();
+}
+function grid(){
+ const G=document.getElementById('grid'),d=drinks.find(x=>String(x.id)==document.getElementById('whatif').value);
+ const m=d&&metrics(d);
+ if(!m||!m.ok){G.innerHTML='<p class="note">Enter volume, ABV and price for a drink to see this table.</p>';return}
+ const step=Math.max(0.05,Math.round(m.price*0.05*20)/20);
+ const ps=[-3,-2,-1,0,1,2,3].map(k=>m.price+k*step).filter(p=>p>0);
+ const as=[2,1,0,-1,-2].map(k=>m.abv+k*(m.abv>20?2:0.5)).filter(a=>a>0);
+ const val=(a,p)=>m.vol*m.qty*a/1000/p;
+ let mx=0;as.forEach(a=>ps.forEach(p=>mx=Math.max(mx,val(a,p))));
+ G.innerHTML='<table><tr><th>ABV \\ £</th>'+ps.map(p=>`<th>£${f(p)}</th>`).join('')+'</tr>'+
+ as.map(a=>`<tr><th>${f(a,1)}%</th>`+ps.map(p=>{const v=val(a,p);const hi=Math.abs(a-m.abv)<1e-9&&Math.abs(p-m.price)<1e-9;return `<td class="num ${hi?'hi':v==mx?'mx':''}">${f(v)}</td>`}).join('')+'</tr>').join('')+'</table>';
+}
+document.getElementById('add').onclick=add;
+document.getElementById('reset').onclick=()=>{drinks=[];add()};
+document.getElementById('whatif').onchange=grid;
+const L=document.getElementById('list');
+L.addEventListener('input',e=>{
+ const c=e.target.closest('.drink');if(!c||!e.target.dataset.k)return;
+ drinks.find(d=>d.id==c.dataset.id)[e.target.dataset.k]=e.target.value;update()});
+L.addEventListener('change',e=>{
+ const c=e.target.closest('.drink');if(!c)return;
+ const d=drinks.find(x=>x.id==c.dataset.id);
+ if(e.target.matches('[data-pre]')&&e.target.value){d.abv=String(e.target.value);const t=e.target.selectedOptions[0].text;if(!d.name)d.name=t;render()}
+ if(e.target.matches('[data-size]')&&e.target.value){d.vol=String(e.target.value);render()}
+});
+L.addEventListener('click',e=>{
+ const b=e.target.closest('[data-del]');if(!b)return;
+ drinks=drinks.filter(d=>d.id!=b.dataset.del);
+ if(!drinks.length)add();else render()});
+load();render();
+</script>
+</body>
+</html>
