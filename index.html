@@ -49,6 +49,9 @@ td.hi{background:var(--accbg);color:var(--acc);font-weight:700}
 td.mx{background:var(--goodbg)}
 .note{color:var(--mute);font-size:.82rem}
 .err{color:var(--warn);font-size:.8rem;min-height:1em}
+#ops{position:fixed;left:0;right:0;bottom:0;display:none;gap:6px;justify-content:center;padding:8px 8px calc(8px + env(safe-area-inset-bottom,0px));background:var(--card);border-top:1px solid var(--line);z-index:9}
+#ops.on{display:flex}
+#ops button{flex:1;max-width:64px;font-size:1.25rem;padding:10px 0}
 @media (min-width:560px){.row{grid-template-columns:repeat(4,1fr)}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -87,6 +90,7 @@ td.mx{background:var(--goodbg)}
 
 <p class="note">One UK unit is 10 ml of pure alcohol. Units = volume (ml) × ABV ÷ 1000. Value score is units per £, so higher is better.</p>
 </main>
+<div id="ops" aria-label="Math operators"><button data-op="+">+</button><button data-op="-">−</button><button data-op="*">×</button><button data-op="/">÷</button><button data-op="(">(</button><button data-op=")">)</button><button data-op=".">.</button></div>
 
 <script>
 const PRESETS=[
@@ -97,7 +101,7 @@ let drinks=[],nid=1;
 
 // safe arithmetic parser: + - * / x ( ) decimals
 function calc(s){
- s=String(s).replace(/[x×]/gi,'*').replace(/\s+/g,'');
+ s=String(s).replace(/[x×]/gi,'*').replace(/÷/g,'/').replace(/[−–]/g,'-').replace(/\s+/g,'');
  if(!s)return NaN;
  let i=0;
  function ex(){let v=tm();while(s[i]=='+'||s[i]=='-'){const o=s[i++];const r=tm();v=o=='+'?v+r:v-r}return v}
@@ -131,10 +135,10 @@ function render(){
  <div class="row">
  <div><label>Type (fills ABV)</label><select data-pre><option value="">Pick…</option>${opt(PRESETS)}</select></div>
  <div><label>Size (fills ml)</label><select data-size><option value="">Pick…</option>${opt(SIZES)}</select></div>
- <div><label>Volume each (ml)</label><input data-k="vol" inputmode="decimal" value="${esc(d.vol)}" placeholder="568"></div>
- <div><label>Quantity</label><input data-k="qty" inputmode="decimal" value="${esc(d.qty)}" placeholder="1"></div>
- <div><label>ABV %</label><input data-k="abv" inputmode="decimal" value="${esc(d.abv)}" placeholder="4.5"></div>
- <div><label>Total price (£)</label><input data-k="price" inputmode="decimal" value="${esc(d.price)}" placeholder="4.80"></div>
+ <div><label>Volume each (ml)</label><input data-k="vol" inputmode="text" enterkeyhint="done" autocapitalize="off" autocorrect="off" spellcheck="false" value="${esc(d.vol)}" placeholder="568"></div>
+ <div><label>Quantity</label><input data-k="qty" inputmode="text" enterkeyhint="done" autocapitalize="off" autocorrect="off" spellcheck="false" value="${esc(d.qty)}" placeholder="1"></div>
+ <div><label>ABV %</label><input data-k="abv" inputmode="text" enterkeyhint="done" autocapitalize="off" autocorrect="off" spellcheck="false" value="${esc(d.abv)}" placeholder="4.5"></div>
+ <div><label>Total price (£)</label><input data-k="price" inputmode="text" enterkeyhint="done" autocapitalize="off" autocorrect="off" spellcheck="false" value="${esc(d.price)}" placeholder="4.80"></div>
  </div><div class="res"></div><div class="err"></div><div class="tagbox"></div></div>`).join('');
  update();
 }
@@ -198,6 +202,17 @@ L.addEventListener('click',e=>{
  const b=e.target.closest('[data-del]');if(!b)return;
  drinks=drinks.filter(d=>d.id!=b.dataset.del);
  if(!drinks.length)add();else render()});
+const ops=document.getElementById('ops');let cur=null;
+const isMath=el=>el&&el.matches&&el.matches('input[data-k]:not([data-k="name"])');
+function posOps(){const v=window.visualViewport;ops.style.bottom=v?Math.max(0,window.innerHeight-v.height-v.offsetTop)+'px':'0px'}
+if(window.visualViewport){visualViewport.addEventListener('resize',posOps);visualViewport.addEventListener('scroll',posOps)}
+document.addEventListener('focusin',e=>{if(isMath(e.target)){cur=e.target;ops.classList.add('on');posOps()}});
+document.addEventListener('focusout',e=>{if(isMath(e.target))setTimeout(()=>{if(!isMath(document.activeElement))ops.classList.remove('on')},100)});
+ops.addEventListener('pointerdown',e=>{const b=e.target.closest('[data-op]');if(!b)return;e.preventDefault();
+ if(!cur)return;const a=cur.selectionStart??cur.value.length,z=cur.selectionEnd??a;
+ cur.value=cur.value.slice(0,a)+b.dataset.op+cur.value.slice(z);
+ const n=a+1;try{cur.setSelectionRange(n,n)}catch(_){}
+ cur.dispatchEvent(new Event('input',{bubbles:true}))});
 load();render();
 </script>
 </body>
