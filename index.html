@@ -5,13 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Pour Value: units and value calculator</title>
 <style>
-:root{--bg:#edf0f3;--card:#fff;--ink:#14202b;--mute:#5d6b78;--line:#d5dce3;--acc:#c46a00;--accbg:#fff1dc;--good:#0f7a4a;--goodbg:#dff5e9;--warn:#b3261e;--warnbg:#fde8e6;
+:root{--bg:rgba(255,255,255,.38);--card:rgba(255,246,222,.38);--ink:#2a1500;--mute:#5e3a10;--line:rgba(255,255,255,.55);--acc:#7a3d00;--accbg:#fff;--good:#0a5c34;--goodbg:rgba(225,255,235,.9);--warn:#a3140c;--warnbg:#fde8e6;
+--b1:#f7c13a;--b2:#e29a1a;--b3:#b86a0a;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10171e;--card:#18222c;--ink:#e8eef3;--mute:#93a2b0;--line:#2b3946;--acc:#ffa133;--accbg:#3a2a12;--good:#4fd392;--goodbg:#10331f;--warn:#ff8f87;--warnbg:#3b1815}}
-:root[data-theme="dark"]{--bg:#10171e;--card:#18222c;--ink:#e8eef3;--mute:#93a2b0;--line:#2b3946;--acc:#ffa133;--accbg:#3a2a12;--good:#4fd392;--goodbg:#10331f;--warn:#ff8f87;--warnbg:#3b1815}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:rgba(255,220,150,.12);--card:rgba(40,18,0,.42);--ink:#fff1d6;--mute:#e3be86;--line:rgba(255,220,150,.28);--acc:#ffc766;--accbg:#000;--good:#7ee6ab;--goodbg:rgba(10,60,30,.8);--warn:#ff9d96;--b1:#c97d10;--b2:#8f510a;--b3:#4a2300}}
+:root[data-theme="dark"]{--bg:rgba(255,220,150,.12);--card:rgba(40,18,0,.42);--ink:#fff1d6;--mute:#e3be86;--line:rgba(255,220,150,.28);--acc:#ffc766;--accbg:#000;--good:#7ee6ab;--goodbg:rgba(10,60,30,.8);--warn:#ff9d96;--b1:#c97d10;--b2:#8f510a;--b3:#4a2300}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 ui-rounded,"Avenir Next",Segoe UI,system-ui,sans-serif}
+body{margin:0;background:var(--b3);color:var(--ink);font:16px/1.45 ui-rounded,"Avenir Next",Segoe UI,system-ui,sans-serif}
 main{max-width:760px;margin:0 auto;padding:16px}
 h1{font-size:1.6rem;margin:8px 0 2px;letter-spacing:-.02em}
 .sub{color:var(--mute);margin:0 0 14px}
@@ -45,18 +46,25 @@ input.bad{border-color:var(--warn)}
 table{border-collapse:collapse;width:100%;font-size:.85rem;text-align:center}
 th,td{padding:6px 8px;border:1px solid var(--line);white-space:nowrap}
 th{background:var(--bg);font-weight:600}
-td.hi{background:var(--accbg);color:var(--acc);font-weight:700}
-td.mx{background:var(--goodbg)}
 .note{color:var(--mute);font-size:.82rem}
 .err{color:var(--warn);font-size:.8rem;min-height:1em}
 #ops{position:fixed;left:0;right:0;bottom:0;display:none;gap:6px;justify-content:center;padding:8px 8px calc(8px + env(safe-area-inset-bottom,0px));background:var(--card);border-top:1px solid var(--line);z-index:9}
 #ops.on{display:flex}
 #ops button{flex:1;max-width:64px;font-size:1.25rem;padding:10px 0}
+#beer{position:fixed;inset:0;z-index:-2;background:linear-gradient(180deg,var(--b1) 0%,var(--b2) 55%,var(--b3) 100%)}
+#fizz{position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none}
+main{position:relative;z-index:1;padding-top:72px}
+.drink,.sec,#ops{-webkit-backdrop-filter:blur(14px) saturate(1.2);backdrop-filter:blur(14px) saturate(1.2);box-shadow:0 4px 18px rgba(60,25,0,.18)}
+.drink.best{box-shadow:0 0 0 2px var(--good),0 4px 18px rgba(60,25,0,.18)}
+button{background:rgba(255,255,255,.35);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+button.primary{background:#3b1d00;color:#ffe9b8;border-color:#3b1d00}
+td.sel{background:#1e6bff;color:#fff;font-weight:700;box-shadow:inset 0 0 0 2px #fff}
 @media (min-width:560px){.row{grid-template-columns:repeat(4,1fr)}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
+<div id="beer"></div><canvas id="fizz" aria-hidden="true"></canvas>
 <main>
 <h1>Pour Value</h1>
 <p class="sub">Compare drinks by units, cost per unit and alcohol per pound. Fields accept sums like <b>568*2</b> or <b>4.5+0.5</b>.</p>
@@ -84,7 +92,7 @@ td.mx{background:var(--goodbg)}
 <h2>What if the price or strength changes?</h2>
 <label for="whatif">Drink to explore</label>
 <select id="whatif"></select>
-<p class="note">Units per £ at nearby prices (across) and strengths (down). Highlighted cell is your current drink.</p>
+<p class="note">Units per £ at nearby prices (across) and strengths (down). Blue is your drink; green is better value, red is worse, and deeper colour means a bigger difference.</p>
 <div class="scroll" id="grid"></div>
 </section>
 
@@ -183,7 +191,7 @@ function grid(){
  const val=(a,p)=>m.vol*m.qty*a/1000/p;
  let mx=0;as.forEach(a=>ps.forEach(p=>mx=Math.max(mx,val(a,p))));
  G.innerHTML='<table><tr><th>ABV \\ £</th>'+ps.map(p=>`<th>£${f(p)}</th>`).join('')+'</tr>'+
- as.map(a=>`<tr><th>${f(a,1)}%</th>`+ps.map(p=>{const v=val(a,p);const hi=Math.abs(a-m.abv)<1e-9&&Math.abs(p-m.price)<1e-9;return `<td class="num ${hi?'hi':v==mx?'mx':''}">${f(v)}</td>`}).join('')+'</tr>').join('')+'</table>';
+ as.map(a=>`<tr><th>${f(a,1)}%</th>`+ps.map(p=>{const v=val(a,p);const hi=Math.abs(a-m.abv)<1e-9&&Math.abs(p-m.price)<1e-9;if(hi)return `<td class="num sel">${f(v)}</td>`;const r=v/m.upp,al=Math.min(.75,Math.abs(r-1)*4+.12),c=r>=1?'20,150,80':'215,45,40';return `<td class="num" style="background:rgba(${c},${al.toFixed(2)})">${f(v)}</td>`}).join('')+'</tr>').join('')+'</table>';
 }
 document.getElementById('add').onclick=add;
 document.getElementById('reset').onclick=()=>{drinks=[];add()};
@@ -213,6 +221,33 @@ ops.addEventListener('pointerdown',e=>{const b=e.target.closest('[data-op]');if(
  cur.value=cur.value.slice(0,a)+b.dataset.op+cur.value.slice(z);
  const n=a+1;try{cur.setSelectionRange(n,n)}catch(_){}
  cur.dispatchEvent(new Event('input',{bubbles:true}))});
+(function(){
+ const cv=document.getElementById('fizz'),cx=cv.getContext('2d');
+ const still=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+ let W,H,foam=[],bub=[],FH=64;
+ const rnd=(a,b)=>a+Math.random()*(b-a);
+ function mk(init){const r=rnd(2,9);return{x:rnd(0,W),y:init?rnd(FH,H):H+r+rnd(0,H*.3),r,v:rnd(.35,.9)+r*.09,w:rnd(.4,1.4),p:rnd(0,6.28)}}
+ function size(){const d=window.devicePixelRatio||1;W=innerWidth;H=innerHeight;cv.width=W*d;cv.height=H*d;cx.setTransform(d,0,0,d,0,0);
+  FH=64+(parseFloat(getComputedStyle(document.documentElement).paddingTop)||0);
+  foam=[];for(let x=-10;x<W+30;x+=9){foam.push({x:x+rnd(-6,6),y:rnd(FH*.35,FH*.95),r:rnd(11,24)});foam.push({x:x+rnd(-8,8),y:rnd(0,FH*.5),r:rnd(14,26)})}
+  const n=Math.max(30,Math.min(110,Math.round(W/11)));bub=Array.from({length:n},()=>mk(true))}
+ function head(){
+  cx.fillStyle='#fffaf0';cx.fillRect(0,0,W,FH*.55);
+  foam.forEach(c=>{cx.beginPath();cx.arc(c.x,c.y,c.r,0,6.283);cx.fillStyle='#fffaf0';cx.fill();cx.lineWidth=1;cx.strokeStyle='rgba(214,170,90,.55)';cx.stroke()});
+  const g=cx.createLinearGradient(0,FH*.6,0,FH*1.25);g.addColorStop(0,'rgba(255,250,240,.55)');g.addColorStop(1,'rgba(255,250,240,0)');cx.fillStyle=g;cx.fillRect(0,FH*.6,W,FH*.7)}
+ function draw(t){
+  cx.clearRect(0,0,W,H);
+  bub.forEach((b,i)=>{
+   if(!still){b.y-=b.v;b.x+=Math.sin(t/700*b.w+b.p)*.3}
+   if(b.y<FH*.8)bub[i]=mk(false);
+   cx.beginPath();cx.arc(b.x,b.y,b.r,0,6.283);cx.fillStyle='rgba(255,255,255,.16)';cx.fill();
+   cx.lineWidth=1;cx.strokeStyle='rgba(255,255,255,.55)';cx.stroke();
+   cx.beginPath();cx.arc(b.x-b.r*.3,b.y-b.r*.3,b.r*.25,0,6.283);cx.fillStyle='rgba(255,255,255,.7)';cx.fill()});
+  head();
+  if(!still)requestAnimationFrame(draw)}
+ size();addEventListener('resize',()=>{size();if(still)draw(0)});
+ requestAnimationFrame(draw);
+})();
 load();render();
 </script>
 </body>
